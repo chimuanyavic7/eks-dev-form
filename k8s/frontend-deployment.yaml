@@ -1,0 +1,47 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: frontend-deployment
+  namespace: eks-project
+spec:
+  replicas: 2
+  selector:
+   matchLabels:
+      app: frontend
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  template:
+    metadata:
+      labels:
+        app: frontend
+    spec:
+      topologySpreadConstraints:
+       - maxSkew: 1
+         topologyKey: topology.kubernetes.io/zone
+         whenUnsatisfiable: ScheduleAnyway
+         labelSelector:
+           matchLabels:
+             app: frontend 
+
+      containers:
+        - name: frontend
+          image: chimuanyavic7/frontend-dev:v1
+          ports:
+            - containerPort: 80
+
+          resources:
+            requests:
+              memory: "64Mi"
+              cpu: "250m"
+            limits:
+              memory: "128Mi"
+              cpu: "500m"  
+
+
+
+
+
+              
