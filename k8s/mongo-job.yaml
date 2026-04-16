@@ -4,8 +4,7 @@ metadata:
   name: mongo-init
   namespace: eks-project
 spec:
-  backoffLimit: 4
-  ttlSecondsAfterFinished: 300
+  backoffLimit: 8
   template:
     spec:
       restartPolicy: OnFailure
@@ -13,23 +12,28 @@ spec:
         - name: mongo-init
           image: mongo:7
           command:
-            - /bin/sh
+            - /bin/bash
             - -c
             - |
+              set -e
+
               echo "⏳ Waiting for MongoDB pods..."
 
-              for host in mongoset-0.mongo.eks-project.svc.cluster.local mongoset-1.mongo.eks-project.svc.cluster.local; do
+              HOSTS=(
+                "mongoset-0.mongo.eks-project.svc.cluster.local:27017"
+                "mongoset-1.mongo.eks-project.svc.cluster.local:27017"
+              )
+
+              for host in "${HOSTS[@]}"; do
                 echo "Checking $host..."
-                for i in {1..60}; do
-                  if mongosh --host $host:27017 --eval "db.adminCommand('ping')" >/dev/null 2>&1; then
-                    echo "$host is ready"
-                    break
-                  fi
+                until mongosh --host $host --quiet --eval "db.adminCommand({ ping: 1 })" >/dev/null 2>&1; do
+                  echo "Waiting for $host..."
                   sleep 3
                 done
+                echo "$host is ready"
               done
 
-              echo "✅ MongoDB pods ready. Initializing replica set..."
+              echo "✅ MongoDB pods ready"
 
               mongosh --host mongoset-0.mongo.eks-project.svc.cluster.local:27017 --eval '
                 const config = {
@@ -40,18 +44,14 @@ spec:
                   ]
                 };
 
-                let initialized = false;
-
                 try {
                   rs.status();
-                  initialized = true;
-                  print("Replica set already initialized.");
-                } catch (e) {}
-
-                if (!initialized) {
+                  print("Replica set already initialized");
+                } catch (e) {
                   print("Initializing replica set...");
                   rs.initiate(config);
+                  print("Replica set initialized");
                 }
               '
 
-              echo "✅ Replica set initialization completed."
+              echo "✅ Done"
