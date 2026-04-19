@@ -106,7 +106,7 @@ jobs:
           docker push ${{ env.IMAGE_NAME }}/backend-dev:$VERSION
 
 
-# ---------------- VALIDATION ----------------
+# ---------------- VALIDATION ----------------#
   validate:
     name: validate-helm-and-k8s
     runs-on: ubuntu-latest
