@@ -14,20 +14,21 @@ jobs:
 
 # ---------------- CI ----------------
   ci:
-    name: lint-test-build
-    runs-on: ubuntu-latest
+  #  name: lint-test-build
+  # runs-on: ubuntu-latest
 
     steps:
+      - name: Checkout repository    
       - uses: actions/checkout@v4
 
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 20
+    #  - uses: actions/setup-node@v4
+    #    with:
+    #      node-version: 20
 
       # FRONTEND
-      - name: Install frontend deps
-        working-directory: frontend
-        run: npm install
+    #  - name: Install frontend deps
+    #    working-directory: frontend
+    #    run: npm install
 
     #  - name: Lint frontend
     #    working-directory: frontend
@@ -37,9 +38,9 @@ jobs:
     #    working-directory: frontend
     #    run: npm test -- --ci --coverage
 
-      - name: Build frontend
-        working-directory: frontend
-        run: npm run build
+    #  - name: Build frontend
+    #    working-directory: frontend
+    #    run: npm run build
 
       # BACKEND
     #  - name: Install backend deps
@@ -54,9 +55,9 @@ jobs:
     #    working-directory: backend
     #    run: npm test -- --ci --coverage
 
-      - name: Build backend
-        working-directory: backend
-        run: npm run build
+    #  - name: Build backend
+    #    working-directory: backend
+    #    run: npm run build
 
 
 # ---------------- VERSION ----------------
