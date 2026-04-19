@@ -23,7 +23,6 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: "npm"
 
       # FRONTEND
       - name: Install frontend deps
@@ -36,7 +35,7 @@ jobs:
 
       - name: Test frontend
         working-directory: frontend
-        run: npm test -- --watchAll=false
+        run: npm test -- --ci --coverage
 
       - name: Build frontend
         working-directory: frontend
@@ -53,7 +52,7 @@ jobs:
 
       - name: Test backend
         working-directory: backend
-        run: npm test -- --watchAll=false
+        run: npm test -- --ci --coverage
 
       - name: Build backend
         working-directory: backend
