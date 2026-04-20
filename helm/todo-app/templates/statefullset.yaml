@@ -5,7 +5,7 @@ metadata:
   namespace: eks-project
 spec:
   serviceName: mongo
-  replicas: {{ .values.mongo.replicas}}
+  replicas: {{ .Values.mongo.replicas}}
   selector:
     matchLabels:
       app: mongo

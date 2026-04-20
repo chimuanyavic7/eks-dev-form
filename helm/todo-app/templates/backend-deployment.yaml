@@ -4,7 +4,7 @@ metadata:
   name: backend-deployment
   namespace: eks-project 
 spec:
-  replicas: {{.values.backend.replicas}}
+  replicas: {{.Values.backend.replicas}}
   selector:
     matchLabels:
       app: backend
@@ -20,7 +20,7 @@ spec:
     spec:
       containers:
         - name: backend
-          image: chimuanyavic7/backend-dev:{{ .values.backend.tag }}
+          image: chimuanyavic7/backend-dev:{{ .Values.backend.tag }}
           ports:
             - containerPort: 3500
 
