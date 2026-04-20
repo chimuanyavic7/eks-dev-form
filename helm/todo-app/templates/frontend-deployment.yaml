@@ -4,7 +4,7 @@ metadata:
   name: frontend-deployment
   namespace: eks-project
 spec:
-  replicas: 2
+  replicas:   {{ .values.frontend.replicas}}
   selector:
    matchLabels:
       app: frontend
@@ -28,7 +28,7 @@ spec:
 
       containers:
         - name: frontend
-          image: chimuanyavic7/frontend-dev:v2
+          image: chimuanyavic7/frontend-dev:{{ .values.frontend.tag}}
           ports:
             - containerPort: 80
 

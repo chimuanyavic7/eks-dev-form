@@ -1,12 +1,17 @@
-kind: Ingress
 apiVersion: networking.k8s.io/v1
+kind: Ingress
 metadata:
   name: app-ingress
-  namespace: project3
+  namespace: eks-project
+  annotations:
+    kubernetes.io/ingress.class: alb
+    alb.ingress.kubernetes.io/scheme: internet-facing
+    alb.ingress.kubernetes.io/listen-ports: '[{"HTTP":80}]'
+    alb.ingress.kubernetes.io/target-type: ip
+    alb.ingress.kubernetes.io/healthcheck-path: /health
 spec:
-  ingressClassName: nginx
   rules:
-    - host: myapp.local
+    - host: {{.values.ingress-alb.host}}
       http:
         paths:
           - path: /
