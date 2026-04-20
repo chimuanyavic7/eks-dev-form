@@ -38,10 +38,10 @@ jobs:
           if [[ "$GITHUB_REF" == refs/tags/* ]]; then
             VERSION=${GITHUB_REF_NAME}
           else
-            VERSION=latest
+            VERSION=dev-${GITHUB_RUN_NUMBER}
           fi
+      
           echo "version=$VERSION" >> $GITHUB_OUTPUT
-
 
 # ---------------- BUILD & PUSH ----------------
   docker:
