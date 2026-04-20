@@ -5,4 +5,4 @@ metadata:
   namespace: eks-project
 data:
   PORT: "3500"
-  REACT_APP_BACKEND_URL: "/api/tasks"
+  REACT_APP_BACKEND_URL: "/api/tasks"   -----check this later
