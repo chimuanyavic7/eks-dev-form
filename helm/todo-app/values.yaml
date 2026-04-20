@@ -5,7 +5,7 @@ frontend:
   replicas: 1
   tag: v2   
 
-  
+
 # ──────────────────────────────────────
 # Backend
 # ──────────────────────────────────────
@@ -22,9 +22,9 @@ mongo:
 # ──────────────────────────────────────
 # Shared
 # ──────────────────────────────────────
-ingress-alb:
+ingress_alb:
   host: myapp.local
 
-ingress1-nginx:
+ingress1_nginx:
   host: myapp.local  
   
