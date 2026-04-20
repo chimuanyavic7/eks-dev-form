@@ -15,7 +15,7 @@ jobs:
 
 # ---------------- CI / PREP ----------------
   ci:
-    name: Prepare
+    name: Build code
     runs-on: ubuntu-latest
 
     steps:
