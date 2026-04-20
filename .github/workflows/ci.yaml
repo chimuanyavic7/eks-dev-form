@@ -64,13 +64,8 @@ jobs:
           
 
 #------------ different method of writing build and push image============
-
-#      - name: Build & push backend
-#        run: |
-#          docker build -t $IMAGE_NAME/backend-dev:$VERSION backend
-#          docker push $IMAGE_NAME/backend-dev:$VERSION
-
-      
+#========== the first method this a better version/step to use.  the one with out #
+  
       - name: Build & push frontend
         uses: docker/build-push-action@v5
         with:
@@ -80,11 +75,26 @@ jobs:
 #         cache-from: type=gha
 #         cache-to: type=gha,mode=max
 
-
       - name: Build & push backend
-        run: |
-          docker build -t $IMAGE_NAME/backend-dev:$VERSION backend
-          docker push $IMAGE_NAME/backend-dev:$VERSION
+        uses: docker/build-push-action@v5
+        with:
+          context: backend
+          push: true
+          tags: ${{ env.IMAGE_NAME }}/backend-dev:${{ env.VERSION }}
+#         cache-from: type=gha
+#         cache-to: type=gha,mode=max
+
+#---------------OR----------------------------------
+
+#      - name: Build & push frontend
+#        run: |
+#          docker build -t $IMAGE_NAME/frontend-dev:$VERSION backend
+#          docker push $IMAGE_NAME/frontend-dev:$VERSION
+
+#      - name: Build & push backend
+#        run: |
+#         docker build -t $IMAGE_NAME/backend-dev:$VERSION backend
+#         docker push $IMAGE_NAME/backend-dev:$VERSION
 
 
 # ---------------- VALIDATION ----------------
