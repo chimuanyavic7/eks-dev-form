@@ -152,5 +152,5 @@ jobs:
           git config user.email "github-actions@github.com"
 
           git add helm/todo-app/values.yaml
-          git commit -m "deploy: ${{ needs.version.outputs.version }}" || echo "no changes made"
+          git commit -m "deploy: ${{ needs.version.outputs.version }}" || echo "no changes"
           git push
