@@ -29,7 +29,7 @@ spec:
               valueFrom:
                 secretKeyRef:
                   name: backend-secret
-                  key:  MONGODB_URI
+                  key: MONGODB_URI
 
             - name: PORT
               valueFrom:
