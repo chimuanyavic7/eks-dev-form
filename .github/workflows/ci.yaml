@@ -5,7 +5,7 @@ on:
     branches:
       - main
     paths-ignore:
-      - 'README.md'  
+      - 'README.md'
   workflow_dispatch:
 
 env:
@@ -13,46 +13,57 @@ env:
 
 jobs:
 
-# ---------------- CI / PREP ----------------
+# ---------------- CI ----------------
   ci:
     name: Build code
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
 
-# ---------------- VERSION ----------------
+# ---------------- VERSION (FIXED SEMVER) ----------------
   version:
-    name: Extract version
+    name: Calculate next version
     runs-on: ubuntu-latest
     needs: ci
 
     outputs:
-      version: ${{ steps.v.outputs.version }}
+      version: ${{ steps.ver.outputs.version }}
 
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-      with:
-        fetch-depth: 0
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
-    - name: Get latest tag
-      id: get_tag
-      run: |
-        git fetch --tags
+      - name: Compute next semantic version
+        id: ver
+        run: |
+          git fetch --tags
 
-        LATEST_TAG=$(git tag --sort=-v:refname | head -n 1)
+          LATEST_TAG=$(git tag --sort=-v:refname | head -n 1)
 
-        if [ -z "$LATEST_TAG" ]; then
-          LATEST_TAG="v1.0.0"
-        fi
+          if [ -z "$LATEST_TAG" ]; then
+            LATEST_TAG="v1.0.0"
+          fi
 
-        echo "Latest tag: $LATEST_TAG"
-        echo "latest=$LATEST_TAG" >> $GITHUB_OUTPUT
+          VERSION=${LATEST_TAG#v}
 
-# ---------------- BUILD & PUSH ---------------
+          IFS='.' read -r MAJOR MINOR PATCH <<< "$VERSION"
+
+          PATCH=$((PATCH + 1))
+
+          if [ "$PATCH" -gt 9 ]; then
+            PATCH=0
+            MINOR=$((MINOR + 1))
+          fi
+
+          NEW_VERSION="v$MAJOR.$MINOR.$PATCH"
+
+          echo "Next version: $NEW_VERSION"
+          echo "version=$NEW_VERSION" >> $GITHUB_OUTPUT
+
+
+# ---------------- DOCKER BUILD ----------------
   docker:
     name: Build and Push Images
     runs-on: ubuntu-latest
@@ -62,27 +73,20 @@ jobs:
       VERSION: ${{ needs.version.outputs.version }}
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
       - name: Login to DockerHub
         uses: docker/login-action@v4
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }} 
-          
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-#------------ different method of writing build and push image============
-#========== the first method this a better version/step to use.  the one with out #
-  
       - name: Build & push frontend
         uses: docker/build-push-action@v5
         with:
           context: frontend
           push: true
           tags: ${{ env.IMAGE_NAME }}/frontend-dev:${{ env.VERSION }}
-#         cache-from: type=gha
-#         cache-to: type=gha,mode=max
 
       - name: Build & push backend
         uses: docker/build-push-action@v5
@@ -90,23 +94,31 @@ jobs:
           context: backend
           push: true
           tags: ${{ env.IMAGE_NAME }}/backend-dev:${{ env.VERSION }}
-#         cache-from: type=gha
-#         cache-to: type=gha,mode=max
-
-#---------------OR----------------------------------
-
-#      - name: Build & push frontend
-#        run: |
-#          docker build -t $IMAGE_NAME/frontend-dev:$VERSION backend
-#          docker push $IMAGE_NAME/frontend-dev:$VERSION
-
-#      - name: Build & push backend
-#        run: |
-#         docker build -t $IMAGE_NAME/backend-dev:$VERSION backend
-#         docker push $IMAGE_NAME/backend-dev:$VERSION
 
 
-# ---------------- VALIDATION ----------------
+# ---------------- TAG CREATION ----------------
+  tag:
+    name: Create Git Tag
+    runs-on: ubuntu-latest
+    needs: [docker, version]
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Create and push tag
+        run: |
+          VERSION="${{ needs.version.outputs.version }}"
+
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+
+          git tag $VERSION
+          git push origin $VERSION
+
+
+# ---------------- HELM VALIDATION ----------------
   validate:
     name: Validate Helm
     runs-on: ubuntu-latest
@@ -119,11 +131,12 @@ jobs:
       - name: Helm lint
         run: helm lint helm/todo-app
 
-      - name: Helm template validate
+      - name: Helm template validation
         run: |
           helm template helm/todo-app \
-          --set frontend.tag=${{ needs.version.outputs.version }} \
-          --set backend.tag=${{ needs.version.outputs.version }} 
+            --set frontend.tag=${{ needs.version.outputs.version }} \
+            --set backend.tag=${{ needs.version.outputs.version }}
+
 
 # ---------------- GITOPS ----------------
   gitops:
@@ -138,30 +151,25 @@ jobs:
           repository: chimuanyavic7/eks-dev-form
           token: ${{ secrets.GITOPS_TOKEN }}
           ref: main
-#          fetch-depth: 0         
 
       - name: Setup yq
         uses: mikefarah/yq@v4.44.3
 
       - name: Update Helm values
-#        if: startsWith(github.ref, 'refs/tags/v')       # these means if the image tag doesn't have v it will not push/update helm chart
-        run: |
-          VERSION=${{ needs.version.outputs.version }}          
-      - name: Update Helm values
-
-      - name: Update Helm values
         run: |
           VERSION="${{ needs.version.outputs.version }}"
-          echo "Updating version: $VERSION"
+          echo "Updating to $VERSION"
 
           yq -i ".frontend.tag = strenv(VERSION)" helm/todo-app/values.yaml
           yq -i ".backend.tag = strenv(VERSION)" helm/todo-app/values.yaml
-#          sed -i "s/tag:.*/tag: \"${VERSION}\"/" helm/todo-app/values.yaml        
 
-      - name: Commit & push
+      - name: Commit & push changes
         run: |
           git config user.name "github-actions"
           git config user.email "github-actions@github.com"
+
           git add helm/todo-app/values.yaml
-          git commit -m "update image tag to ${{ needs.version.outputs.version }}" || echo "no changes"
+
+          git commit -m "chore: deploy ${{ needs.version.outputs.version }}" || echo "no changes"
+
           git push
