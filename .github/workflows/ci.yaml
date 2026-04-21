@@ -37,24 +37,34 @@ jobs:
     steps:
     - uses: actions/checkout@v4
 
-    - name: Read current version
+    - name: Read or initialize version
       id: ver
       run: |
+        # If version file doesn't exist, start from v1.0.0
         if [ ! -f version.txt ]; then
           echo "v1.0.0" > version.txt
         fi
 
         CURRENT=$(cat version.txt)
 
+        # Remove 'v' prefix
         VERSION=${CURRENT#v}
 
         IFS='.' read -r MAJOR MINOR PATCH <<< "$VERSION"
 
+        # Increment PATCH
         PATCH=$((PATCH + 1))
 
+        # If patch reaches 10 → reset patch, increase minor
         if [ "$PATCH" -gt 9 ]; then
           PATCH=0
           MINOR=$((MINOR + 1))
+        fi
+
+        # If minor reaches 10 → reset minor, increase major
+        if [ "$MINOR" -gt 9 ]; then
+          MINOR=0
+          MAJOR=$((MAJOR + 1))
         fi
 
         NEW_VERSION="v$MAJOR.$MINOR.$PATCH"
@@ -62,9 +72,7 @@ jobs:
         echo "$NEW_VERSION" > version.txt
 
         echo "version=$NEW_VERSION" >> $GITHUB_OUTPUT
-        echo "Generated: $NEW_VERSION"
-
-
+        echo "Generated version: $NEW_VERSION"
 
 # ---------------- HELM VALIDATION ----------------
   validate:
