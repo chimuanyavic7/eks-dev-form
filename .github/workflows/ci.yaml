@@ -21,21 +21,13 @@ jobs:
     name: Build & Test
     runs-on: ubuntu-latest
 
-    outputs:
-      sha: ${{ steps.sha.outputs.sha }}
-
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Get commit SHA
-        id: sha
-        run: echo "sha=${GITHUB_SHA}" >> $GITHUB_OUTPUT
+      - uses: actions/checkout@v4
 
 
-# ---------------- VERSION (READ ONLY) ----------------
+# ---------------- VERSION ----------------
   version:
-    name: Generate version (no git write)
+    name: Generate version
     runs-on: ubuntu-latest
     needs: ci
 
@@ -43,8 +35,7 @@ jobs:
       version: ${{ steps.ver.outputs.version }}
 
     steps:
-      - name: Checkout repo
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
@@ -65,6 +56,7 @@ jobs:
 
           PATCH=$((PATCH + 1))
 
+          # ✅ FIX: proper rollover (v1.0.9 → v1.1.0)
           if [ "$PATCH" -gt 9 ]; then
             PATCH=0
             MINOR=$((MINOR + 1))
@@ -76,7 +68,7 @@ jobs:
           echo "Generated version: $NEW_VERSION"
 
 
-# ---------------- DOCKER BUILD ----------------
+# ---------------- DOCKER ----------------
   docker:
     name: Build & Push Images
     runs-on: ubuntu-latest
@@ -86,9 +78,7 @@ jobs:
       VERSION: ${{ needs.version.outputs.version }}
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
+      - uses: actions/checkout@v4
 
       - name: Login to DockerHub
         uses: docker/login-action@v4
@@ -101,18 +91,16 @@ jobs:
         with:
           context: frontend
           push: true
-          tags: ${{ env.IMAGE_NAME }}/frontend-dev:${{ env.VERSION }}
-          
+          tags: |
+            ${{ env.IMAGE_NAME }}/frontend:${{ env.VERSION }}
 
       - name: Build & Push Backend
         uses: docker/build-push-action@v5
         with:
           context: backend
           push: true
-          tags: ${{ env.IMAGE_NAME }}/backend-dev:${{ env.VERSION }}
-          
-
-
+          tags: |
+            ${{ env.IMAGE_NAME }}/backend:${{ env.VERSION }}
 
 
 # ---------------- HELM VALIDATION ----------------
@@ -135,11 +123,11 @@ jobs:
             --set backend.tag=${{ needs.version.outputs.version }}
 
 
-# ---------------- GITOPS UPDATE (ONLY CD) ----------------
+# ---------------- GITOPS ----------------
   gitops:
     name: Update ArgoCD Repo
     runs-on: ubuntu-latest
-    needs: [validate, version, ci]
+    needs: [validate, version]
 
     steps:
       - name: Checkout GitOps repo
@@ -161,13 +149,11 @@ jobs:
           yq -i ".frontend.tag = strenv(VERSION)" helm/todo-app/values.yaml
           yq -i ".backend.tag = strenv(VERSION)" helm/todo-app/values.yaml
 
-      - name: Commit & Push GitOps changes
+      - name: Commit & Push
         run: |
           git config user.name "github-actions"
           git config user.email "github-actions@github.com"
 
           git add helm/todo-app/values.yaml
-
-          git commit -m "deploy: ${{ needs.version.outputs.version }}" || echo "no changes made"
-
+          git commit -m "deploy: ${{ needs.version.outputs.version }}" || echo "no changes"
           git push
