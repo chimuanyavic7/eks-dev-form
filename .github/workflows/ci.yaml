@@ -36,18 +36,29 @@ jobs:
         with:
           fetch-depth: 0   # REQUIRED 
 
-      - name: Get latest tag & bump
+      - name: Generate next version from GitOps repo
         id: ver
         run: |
-          git fetch --tags
+          git fetch origin main
 
-          LATEST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "v1.0.0")
-          echo "Latest tag: $LATEST_TAG"
+          CURRENT=$(yq eval '.frontend.tag' helm/todo-app/values.yaml)
+          echo "Current version: $CURRENT"
 
-          VERSION=${LATEST_TAG#v}
+          VERSION=${CURRENT#v}
+
           IFS='.' read -r MAJOR MINOR PATCH <<< "$VERSION"
 
           PATCH=$((PATCH + 1))
+
+          if [ "$PATCH" -gt 9 ]; then
+            PATCH=0
+            MINOR=$((MINOR + 1))
+          fi
+
+          if [ "$MINOR" -gt 9 ]; then
+            MINOR=0
+            MAJOR=$((MAJOR + 1))
+          fi
 
           NEW_VERSION="v$MAJOR.$MINOR.$PATCH"
 
