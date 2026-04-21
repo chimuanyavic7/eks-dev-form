@@ -31,51 +31,46 @@ jobs:
     outputs:
       version: ${{ steps.ver.outputs.version }}
 
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0   # REQUIRED 
+  steps:
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
 
-      steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
+    - name: Read current version
+      id: ver
+      run: |
+        if [ ! -f version.txt ]; then
+          echo "v1.0.0" > version.txt
+        fi
 
-      - name: Read current version
-        id: ver
-        run: |
-          if [ ! -f version.txt ]; then
-            echo "v1.0.0" > version.txt
-          fi
+        CURRENT=$(cat version.txt)
+        echo "Current version: $CURRENT"
 
-          CURRENT=$(cat version.txt)
-          echo "Current version: $CURRENT"
+        VERSION=${CURRENT#v}
+        IFS='.' read -r MAJOR MINOR PATCH <<< "$VERSION"
 
-          VERSION=${CURRENT#v}
-          IFS='.' read -r MAJOR MINOR PATCH <<< "$VERSION"
+        MAJOR=${MAJOR:-1}
+        MINOR=${MINOR:-0}
+        PATCH=${PATCH:-0}
 
-          MAJOR=${MAJOR:-1}
-          MINOR=${MINOR:-0}
-          PATCH=${PATCH:-0}
+        PATCH=$((PATCH + 1))
 
-          PATCH=$((PATCH + 1))
+        if [ "$PATCH" -ge 10 ]; then
+          PATCH=0
+          MINOR=$((MINOR + 1))
+        fi
 
-          if [ "$PATCH" -ge 10 ]; then
-            PATCH=0
-            MINOR=$((MINOR + 1))
-          fi
+        if [ "$MINOR" -ge 10 ]; then
+          MINOR=0
+          MAJOR=$((MAJOR + 1))
+        fi
 
-          if [ "$MINOR" -ge 10 ]; then
-            MINOR=0
-            MAJOR=$((MAJOR + 1))
-          fi
+        NEW_VERSION="v$MAJOR.$MINOR.$PATCH"
 
-          NEW_VERSION="v$MAJOR.$MINOR.$PATCH"
+        echo "$NEW_VERSION" > version.txt
 
-          echo "$NEW_VERSION" > version.txt
+        echo "version=$NEW_VERSION" >> $GITHUB_OUTPUT
 
-          echo "version=$NEW_VERSION" >> $GITHUB_OUTPUT
-          
 # ---------------- DOCKER (FIXED) ----------------
   docker:
     name: Build & Push Images
