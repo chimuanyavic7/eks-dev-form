@@ -48,14 +48,17 @@ jobs:
 
           IFS='.' read -r MAJOR MINOR PATCH <<< "$VERSION"
 
+          # ✅ only increment patch
           PATCH=$((PATCH + 1))
 
-          if [ "$PATCH" -gt 9 ]; then
+          # if patch reaches 10 → reset patch and increase minor
+          if [ "$PATCH" -ge 10 ]; then
             PATCH=0
-            MINOR=$((MINOR + 1))   
+            MINOR=$((MINOR + 1))
           fi
 
-          if [ "$MINOR" -gt 9 ]; then
+          # if minor reaches 10 → reset minor and increase major
+          if [ "$MINOR" -ge 10 ]; then
             MINOR=0
             MAJOR=$((MAJOR + 1))
           fi
