@@ -88,7 +88,7 @@ jobs:
           context: frontend
           push: true
           tags: |
-            ${{ env.IMAGE_NAME }}/frontend:${{ env.VERSION }}
+            ${{ env.IMAGE_NAME }}/frontend-dev:${{ env.VERSION }}
 
       - name: Build & Push Backend
         uses: docker/build-push-action@v5
@@ -96,7 +96,7 @@ jobs:
           context: backend
           push: true
           tags: |
-            ${{ env.IMAGE_NAME }}/backend:${{ env.VERSION }}
+            ${{ env.IMAGE_NAME }}/backend-dev:${{ env.VERSION }}
 
 
 # ---------------- HELM VALIDATION ----------------
