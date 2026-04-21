@@ -32,12 +32,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          token: ${{ secrets.GITOPS_TOKEN }}   # needed to push back
+          token: ${{ secrets.GITOPS_TOKEN }}
 
       - name: Generate next version
         id: ver
         run: |
-          # create file if not exists
           if [ ! -f version.txt ]; then
             echo "v1.0.0" > version.txt
           fi
