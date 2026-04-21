@@ -127,7 +127,7 @@ jobs:
       - name: Checkout GitOps repo
         uses: actions/checkout@v4
         with:
-          repository: your-org/gitops-repo
+          repository: chimuanyavic7/eks-dev-form
           token: ${{ secrets.GITOPS_TOKEN }}
           fetch-depth: 0
 
