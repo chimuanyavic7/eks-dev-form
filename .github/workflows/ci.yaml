@@ -115,7 +115,8 @@ jobs:
       - name: Helm template validate
         run: |
           helm template helm/todo-app \
-            --set image.tag=${{ needs.version.outputs.version }} 
+          --set frontend.tag=${{ needs.version.outputs.version }} \
+          --set backend.tag=${{ needs.version.outputs.version }} 
 
 # ---------------- GITOPS ----------------
   gitops:
@@ -139,9 +140,13 @@ jobs:
 #        if: startsWith(github.ref, 'refs/tags/v')       # these means if the image tag doesn't have v it will not push/update helm chart
         run: |
           VERSION=${{ needs.version.outputs.version }}          
-          yq -i '.frontend.tag = strenv(VERSION)' helm/todo-app/values.yaml
-          yq -i '.backend.tag = strenv(VERSION)' helm/todo-app/values.yaml
+                - name: Update Helm values
+        run: |
+          VERSION="${{ needs.version.outputs.version }}"
+          echo "Updating image tag to $VERSION"
 
+          yq -i ".frontend.tag = \"$VERSION\"" helm/todo-app/values.yaml
+          yq -i ".backend.tag = \"$VERSION\"" helm/todo-app/values.yaml
 #          sed -i "s/tag:.*/tag: \"${VERSION}\"/" helm/todo-app/values.yaml        
 
       - name: Commit & push
