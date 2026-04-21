@@ -1,5 +1,8 @@
 name: Todo app with GitOps (ArgoCD)
 
+permissions:
+  contents: write
+  
 on:
   push:
     branches:
