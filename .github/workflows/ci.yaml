@@ -158,7 +158,7 @@ jobs:
 
           git add helm/todo-app/values.yaml
 
-          git diff --cached --quiet && echo "No changes to commit" && exit 0
+          git diff --cached --quiet && echo "No changes to commit" && exit 0 sure
 
           git commit -m "deploy: ${{ needs.version.outputs.version }}"
           git push origin main
