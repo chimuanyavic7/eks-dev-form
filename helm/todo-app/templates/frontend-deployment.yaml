@@ -4,9 +4,9 @@ metadata:
   name: frontend-deployment
   namespace: eks-project
 spec:
-  replicas:   {{ .Values.frontend.replicas}}
+  replicas: {{ .Values.frontend.replicas }}
   selector:
-   matchLabels:
+    matchLabels:
       app: frontend
   strategy:
     type: RollingUpdate
@@ -19,16 +19,16 @@ spec:
         app: frontend
     spec:
       topologySpreadConstraints:
-       - maxSkew: 1
-         topologyKey: topology.kubernetes.io/zone
-         whenUnsatisfiable: ScheduleAnyway
-         labelSelector:
-           matchLabels:
-             app: frontend
+        - maxSkew: 1
+          topologyKey: topology.kubernetes.io/zone
+          whenUnsatisfiable: ScheduleAnyway
+          labelSelector:
+            matchLabels:
+              app: frontend
 
       containers:
         - name: frontend
-          image: chimuanyavic7/frontend-dev:{{ .Values.frontend.tag}}
+          image: "chimuanyavic7/frontend-dev:{{ .Values.frontend.tag }}"
           ports:
             - containerPort: 80
 
