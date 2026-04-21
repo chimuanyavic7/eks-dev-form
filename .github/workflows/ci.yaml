@@ -129,7 +129,7 @@ jobs:
         with:
           repository: chimuanyavic7/eks-dev-form
           token: ${{ secrets.GITOPS_TOKEN }}
-          fetch-depth: 0
+#          fetch-depth: 0
 
 
       - name: Setup yq
