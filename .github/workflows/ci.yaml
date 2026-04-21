@@ -2,7 +2,7 @@ name: Todo app with GitOps (ArgoCD)
 
 permissions:
   contents: write
-  
+
 on:
   push:
     branches:
@@ -167,8 +167,10 @@ jobs:
           VERSION="${{ needs.version.outputs.version }}"
           echo "Updating deployment version: $VERSION"
 
-          yq -i ".frontend.tag = strenv(VERSION)" helm/todo-app/values.yaml
-          yq -i ".backend.tag = strenv(VERSION)" helm/todo-app/values.yaml
+          export VERSION
+
+          yq eval -i '.frontend.tag = strenv(VERSION)' helm/todo-app/values.yaml
+          yq eval -i '.backend.tag = strenv(VERSION)' helm/todo-app/values.yaml
 
       - name: Commit & push changes
         run: |
