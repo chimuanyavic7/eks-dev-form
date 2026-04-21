@@ -117,21 +117,6 @@ jobs:
           cache-to: type=gha,mode=max
           
 
-#---------------OR----------------- but the first looks more better -----------------
-
-#      - name: Build & push frontend
-#        run: |
-#          docker build -t $IMAGE_NAME/frontend-dev:$VERSION backend
-#          docker push $IMAGE_NAME/frontend-dev:$VERSION
-
-#      - name: Build & push backend
-#        run: |
-#         docker build -t $IMAGE_NAME/backend-dev:$VERSION backend
-#         docker push $IMAGE_NAME/backend-dev:$VERSION
-
-
-
-
 
 
 
