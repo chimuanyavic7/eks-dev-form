@@ -35,38 +35,34 @@ jobs:
       version: ${{ steps.ver.outputs.version }}
 
     steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
+    - uses: actions/checkout@v4
 
-      - name: Compute semantic version
-        id: ver
-        run: |
-          git fetch --tags
+    - name: Read current version
+      id: ver
+      run: |
+        if [ ! -f version.txt ]; then
+          echo "v1.0.0" > version.txt
+        fi
 
-          LATEST_TAG=$(git tag --sort=-v:refname | head -n 1)
+        CURRENT=$(cat version.txt)
 
-          if [ -z "$LATEST_TAG" ]; then
-            LATEST_TAG="v1.0.0"
-          fi
+        VERSION=${CURRENT#v}
 
-          VERSION=${LATEST_TAG#v}
+        IFS='.' read -r MAJOR MINOR PATCH <<< "$VERSION"
 
-          IFS='.' read -r MAJOR MINOR PATCH <<< "$VERSION"
+        PATCH=$((PATCH + 1))
 
-          PATCH=$((PATCH + 1))
+        if [ "$PATCH" -gt 9 ]; then
+          PATCH=0
+          MINOR=$((MINOR + 1))
+        fi
 
-          # ✅ FIX: proper rollover (v1.0.9 → v1.1.0)
-          if [ "$PATCH" -gt 9 ]; then
-            PATCH=0
-            MINOR=$((MINOR + 1))
-          fi
+        NEW_VERSION="v$MAJOR.$MINOR.$PATCH"
 
-          NEW_VERSION="v$MAJOR.$MINOR.$PATCH"
+        echo "$NEW_VERSION" > version.txt
 
-          echo "version=$NEW_VERSION" >> $GITHUB_OUTPUT
-          echo "Generated version: $NEW_VERSION"
-
+        echo "version=$NEW_VERSION" >> $GITHUB_OUTPUT
+        echo "Generated: $NEW_VERSION"
 
 # ---------------- DOCKER ----------------
   docker:
