@@ -129,6 +129,7 @@ jobs:
         with:
           repository: your-org/gitops-repo
           token: ${{ secrets.GITOPS_TOKEN }}
+          fetch-depth: 0
 
 
       - name: Setup yq
