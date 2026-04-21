@@ -1,4 +1,4 @@
-## **Setup Instruction yes:**
+## **Setup Instruction:**
 
 ## **Prerequisites**
 - AWS Account
