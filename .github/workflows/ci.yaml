@@ -1,7 +1,7 @@
-name: Todo app with GitOps (ArgoCD)
+name: Todo app CI + GitOps (ArgoCD)
 
 permissions:
-  contents: write
+  contents: read
 
 on:
   push:
@@ -18,16 +18,24 @@ jobs:
 
 # ---------------- CI ----------------
   ci:
-    name: Build code
+    name: Build & Test
     runs-on: ubuntu-latest
+
+    outputs:
+      sha: ${{ steps.sha.outputs.sha }}
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Get commit SHA
+        id: sha
+        run: echo "sha=${GITHUB_SHA}" >> $GITHUB_OUTPUT
 
-# ---------------- VERSIONING ----------------
+
+# ---------------- VERSION (READ ONLY) ----------------
   version:
-    name: Calculate next version
+    name: Generate version (no git write)
     runs-on: ubuntu-latest
     needs: ci
 
@@ -64,13 +72,13 @@ jobs:
 
           NEW_VERSION="v$MAJOR.$MINOR.$PATCH"
 
-          echo "Generated version: $NEW_VERSION"
           echo "version=$NEW_VERSION" >> $GITHUB_OUTPUT
+          echo "Generated version: $NEW_VERSION"
 
 
 # ---------------- DOCKER BUILD ----------------
   docker:
-    name: Build and Push Docker Images
+    name: Build & Push Images
     runs-on: ubuntu-latest
     needs: version
 
@@ -87,42 +95,19 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      - name: Build & push frontend
+      - name: Build & Push Frontend
         uses: docker/build-push-action@v5
         with:
           context: frontend
           push: true
           tags: ${{ env.IMAGE_NAME }}/frontend-dev:${{ env.VERSION }}
 
-      - name: Build & push backend
+      - name: Build & Push Backend
         uses: docker/build-push-action@v5
         with:
           context: backend
           push: true
           tags: ${{ env.IMAGE_NAME }}/backend-dev:${{ env.VERSION }}
-
-
-# ---------------- CREATE GIT TAG ----------------
-  tag:
-    name: Create Git Tag
-    runs-on: ubuntu-latest
-    needs: [docker, version]
-
-    steps:
-      - name: Checkout repo
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: Create and push tag
-        run: |
-          VERSION="${{ needs.version.outputs.version }}"
-
-          git config user.name "github-actions"
-          git config user.email "github-actions@github.com"
-
-          git tag $VERSION
-          git push origin $VERSION
 
 
 # ---------------- HELM VALIDATION ----------------
@@ -138,18 +123,18 @@ jobs:
       - name: Helm lint
         run: helm lint helm/todo-app
 
-      - name: Helm template validation
+      - name: Helm template test
         run: |
           helm template helm/todo-app \
             --set frontend.tag=${{ needs.version.outputs.version }} \
             --set backend.tag=${{ needs.version.outputs.version }}
 
 
-# ---------------- GITOPS UPDATE ----------------
+# ---------------- GITOPS UPDATE (ONLY CD) ----------------
   gitops:
     name: Update ArgoCD Repo
     runs-on: ubuntu-latest
-    needs: [validate, version]
+    needs: [validate, version, ci]
 
     steps:
       - name: Checkout GitOps repo
@@ -165,20 +150,19 @@ jobs:
       - name: Update Helm values
         run: |
           VERSION="${{ needs.version.outputs.version }}"
-          echo "Updating deployment version: $VERSION"
 
-          export VERSION
+          echo "Deploying version: $VERSION"
 
-          yq eval -i '.frontend.tag = strenv(VERSION)' helm/todo-app/values.yaml
-          yq eval -i '.backend.tag = strenv(VERSION)' helm/todo-app/values.yaml
+          yq -i ".frontend.tag = strenv(VERSION)" helm/todo-app/values.yaml
+          yq -i ".backend.tag = strenv(VERSION)" helm/todo-app/values.yaml
 
-      - name: Commit & push changes
+      - name: Commit & Push GitOps changes
         run: |
           git config user.name "github-actions"
           git config user.email "github-actions@github.com"
 
           git add helm/todo-app/values.yaml
 
-          git commit -m "chore: deploy ${{ needs.version.outputs.version }}" || echo "no changes"
+          git commit -m "deploy: ${{ needs.version.outputs.version }}" || echo "no changes"
 
           git push
