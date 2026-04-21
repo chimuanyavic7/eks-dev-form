@@ -18,10 +18,11 @@ jobs:
     name: Build code
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
 
 
-# ---------------- VERSION (FIXED SEMVER) ----------------
+# ---------------- VERSIONING ----------------
   version:
     name: Calculate next version
     runs-on: ubuntu-latest
@@ -31,11 +32,12 @@ jobs:
       version: ${{ steps.ver.outputs.version }}
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout repo
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - name: Compute next semantic version
+      - name: Compute semantic version
         id: ver
         run: |
           git fetch --tags
@@ -59,13 +61,13 @@ jobs:
 
           NEW_VERSION="v$MAJOR.$MINOR.$PATCH"
 
-          echo "Next version: $NEW_VERSION"
+          echo "Generated version: $NEW_VERSION"
           echo "version=$NEW_VERSION" >> $GITHUB_OUTPUT
 
 
 # ---------------- DOCKER BUILD ----------------
   docker:
-    name: Build and Push Images
+    name: Build and Push Docker Images
     runs-on: ubuntu-latest
     needs: version
 
@@ -73,7 +75,8 @@ jobs:
       VERSION: ${{ needs.version.outputs.version }}
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
 
       - name: Login to DockerHub
         uses: docker/login-action@v4
@@ -96,14 +99,15 @@ jobs:
           tags: ${{ env.IMAGE_NAME }}/backend-dev:${{ env.VERSION }}
 
 
-# ---------------- TAG CREATION ----------------
+# ---------------- CREATE GIT TAG ----------------
   tag:
     name: Create Git Tag
     runs-on: ubuntu-latest
     needs: [docker, version]
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout repo
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
@@ -120,7 +124,7 @@ jobs:
 
 # ---------------- HELM VALIDATION ----------------
   validate:
-    name: Validate Helm
+    name: Validate Helm Chart
     runs-on: ubuntu-latest
     needs: [docker, version]
 
@@ -138,7 +142,7 @@ jobs:
             --set backend.tag=${{ needs.version.outputs.version }}
 
 
-# ---------------- GITOPS ----------------
+# ---------------- GITOPS UPDATE ----------------
   gitops:
     name: Update ArgoCD Repo
     runs-on: ubuntu-latest
@@ -158,7 +162,7 @@ jobs:
       - name: Update Helm values
         run: |
           VERSION="${{ needs.version.outputs.version }}"
-          echo "Updating to $VERSION"
+          echo "Updating deployment version: $VERSION"
 
           yq -i ".frontend.tag = strenv(VERSION)" helm/todo-app/values.yaml
           yq -i ".backend.tag = strenv(VERSION)" helm/todo-app/values.yaml
