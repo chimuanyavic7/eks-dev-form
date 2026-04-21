@@ -34,7 +34,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 0   # REQUIRED to get tags
+          fetch-depth: 0   # REQUIRED to get 
 
       - name: Get latest tag & bump
         id: ver
