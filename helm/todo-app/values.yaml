@@ -3,28 +3,25 @@
 # ──────────────────────────────────────
 frontend:
   replicas: 1
-  tag: v2   
-
-
+  tag: v2
 # ──────────────────────────────────────
 # Backend
 # ──────────────────────────────────────
 backend:
   replicas: 1
   tag: v2
-  
 # ──────────────────────────────────────
 # MongoDB
 # ──────────────────────────────────────
 mongo:
   replicas: 2
-  
 # ──────────────────────────────────────
 # Shared
 # ──────────────────────────────────────
 ingress_alb:
   host: myapp.local
-
 ingress1_nginx:
-  host: myapp.local  
-#welcome   
+  host: myapp.local
+  #welcome   
+image:
+  tag: ""
