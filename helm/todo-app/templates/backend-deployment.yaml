@@ -36,4 +36,3 @@ spec:
                 configMapKeyRef:
                   name: backend-config
                   key: PORT
-~
