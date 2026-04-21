@@ -35,44 +35,41 @@ jobs:
       version: ${{ steps.ver.outputs.version }}
 
     steps:
-    - uses: actions/checkout@v4
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0  # important: fetch all tags
 
-    - name: Read or initialize version
-      id: ver
+    - name: Get latest tag
+      id: get_tag
       run: |
-        # If version file doesn't exist, start from v1.0.0
-        if [ ! -f version.txt ]; then
-          echo "v1.0.0" > version.txt
+        # Get latest tag or fallback to v1.0.0
+        LATEST_TAG=$(git tag --sort=-v:refname | head -n 1)
+
+        if [ -z "$LATEST_TAG" ]; then
+          LATEST_TAG="v1.0.0"
         fi
 
-        CURRENT=$(cat version.txt)
+        echo "Latest tag: $LATEST_TAG"
+        echo "tag=$LATEST_TAG" >> $GITHUB_OUTPUT
 
-        # Remove 'v' prefix
-        VERSION=${CURRENT#v}
+    - name: Increment version
+      id: version
+      run: |
+        LATEST=${{ steps.get_tag.outputs.tag }}
+
+        # remove "v"
+        VERSION=${LATEST#v}
 
         IFS='.' read -r MAJOR MINOR PATCH <<< "$VERSION"
 
-        # Increment PATCH
+        # increase patch version
         PATCH=$((PATCH + 1))
-
-        # If patch reaches 10 → reset patch, increase minor
-        if [ "$PATCH" -gt 9 ]; then
-          PATCH=0
-          MINOR=$((MINOR + 1))
-        fi
-
-        # If minor reaches 10 → reset minor, increase major
-        if [ "$MINOR" -gt 9 ]; then
-          MINOR=0
-          MAJOR=$((MAJOR + 1))
-        fi
 
         NEW_VERSION="v$MAJOR.$MINOR.$PATCH"
 
-        echo "$NEW_VERSION" > version.txt
-
+        echo "New version: $NEW_VERSION"
         echo "version=$NEW_VERSION" >> $GITHUB_OUTPUT
-        echo "Generated version: $NEW_VERSION"
 
 # ---------------- HELM VALIDATION ----------------
   validate:
