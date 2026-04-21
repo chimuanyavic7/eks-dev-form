@@ -41,23 +41,31 @@ jobs:
         run: |
           git fetch origin main
 
-          CURRENT=$(yq eval '.frontend.tag' helm/todo-app/values.yaml)
-          echo "Current version: $CURRENT"
+          # ✅ clean value from yq
+          CURRENT=$(yq eval -r '.frontend.tag' helm/todo-app/values.yaml)
+          echo "Raw version: $CURRENT"
+
+          # fallback safety
+          if [ -z "$CURRENT" ] || [ "$CURRENT" = "null" ]; then
+            CURRENT="v1.0.0"
+          fi
 
           VERSION=${CURRENT#v}
 
           IFS='.' read -r MAJOR MINOR PATCH <<< "$VERSION"
 
-          # ✅ only increment patch
+          # ensure numbers are valid
+          MAJOR=${MAJOR:-1}
+          MINOR=${MINOR:-0}
+          PATCH=${PATCH:-0}
+
           PATCH=$((PATCH + 1))
 
-          # if patch reaches 10 → reset patch and increase minor
           if [ "$PATCH" -ge 10 ]; then
             PATCH=0
             MINOR=$((MINOR + 1))
           fi
 
-          # if minor reaches 10 → reset minor and increase major
           if [ "$MINOR" -ge 10 ]; then
             MINOR=0
             MAJOR=$((MAJOR + 1))
