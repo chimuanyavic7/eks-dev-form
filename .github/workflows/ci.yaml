@@ -139,11 +139,12 @@ jobs:
       - name: Update Helm values
         run: |
           VERSION="${{ needs.version.outputs.version }}"
+          echo "Updating deployment version: $VERSION"
 
-          echo "Deploying version: $VERSION"
+          export VERSION
 
-          yq -i ".frontend.tag = strenv(VERSION)" helm/todo-app/values.yaml
-          yq -i ".backend.tag = strenv(VERSION)" helm/todo-app/values.yaml
+          yq eval -i '.frontend.tag = strenv(VERSION)' helm/todo-app/values.yaml
+          yq eval -i '.backend.tag = strenv(VERSION)' helm/todo-app/values.yaml
 
       - name: Commit & Push
         run: |
