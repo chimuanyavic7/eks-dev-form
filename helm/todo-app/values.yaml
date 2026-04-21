@@ -23,5 +23,4 @@ ingress_alb:
 ingress1_nginx:
   host: myapp.local
   #welcome   
-image:
-  tag: ""
+
