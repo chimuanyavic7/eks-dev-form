@@ -6,8 +6,6 @@ on:
       - main
     paths-ignore:
       - 'README.md'  
-    tags:
-      - "v*.*.*"
   workflow_dispatch:
 
 env:
@@ -35,15 +33,24 @@ jobs:
       version: ${{ steps.v.outputs.version }}
 
     steps:
-      - id: v
-        run: |
-          if [[ "$GITHUB_REF" == refs/tags/* ]]; then
-            VERSION=${GITHUB_REF_NAME}
-          else
-            VERSION=dev-${GITHUB_RUN_NUMBER}
-          fi
-      
-          echo "version=$VERSION" >> $GITHUB_OUTPUT
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: Get latest tag
+      id: get_tag
+      run: |
+        git fetch --tags
+
+        LATEST_TAG=$(git tag --sort=-v:refname | head -n 1)
+
+        if [ -z "$LATEST_TAG" ]; then
+          LATEST_TAG="v1.0.0"
+        fi
+
+        echo "Latest tag: $LATEST_TAG"
+        echo "latest=$LATEST_TAG" >> $GITHUB_OUTPUT
 
 # ---------------- BUILD & PUSH ---------------
   docker:
