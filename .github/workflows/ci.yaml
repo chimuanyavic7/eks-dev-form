@@ -34,39 +34,25 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          token: ${{ secrets.GITOPS_TOKEN }}
+          fetch-depth: 0   # REQUIRED to get tags
 
-      - name: Generate next version
+      - name: Get latest tag & bump
         id: ver
         run: |
-          if [ ! -f version.txt ]; then
-            echo "v1.0.0" > version.txt
-          fi
+          git fetch --tags
 
-          CURRENT=$(cat version.txt)
-          VERSION=${CURRENT#v}
+          LATEST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "v1.0.0")
+          echo "Latest tag: $LATEST_TAG"
 
+          VERSION=${LATEST_TAG#v}
           IFS='.' read -r MAJOR MINOR PATCH <<< "$VERSION"
 
           PATCH=$((PATCH + 1))
 
-          if [ "$PATCH" -gt 9 ]; then
-            PATCH=0
-            MINOR=$((MINOR + 1))
-          fi
-
-          if [ "$MINOR" -gt 9 ]; then
-            MINOR=0
-            MAJOR=$((MAJOR + 1))
-          fi
-
           NEW_VERSION="v$MAJOR.$MINOR.$PATCH"
 
-          echo "$NEW_VERSION" > version.txt
-          echo "version=$NEW_VERSION" >> $GITHUB_OUTPUT
-
           echo "New version: $NEW_VERSION"
-
+          echo "version=$NEW_VERSION" >> $GITHUB_OUTPUT
 
 # ---------------- DOCKER (FIXED) ----------------
   docker:
