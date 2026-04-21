@@ -22,7 +22,7 @@ jobs:
       - uses: actions/checkout@v4
 
 
-# ---------------- VERSION (FIXED) check----------------
+# ---------------- VERSION (FIXED) ----------------
   version:
     name: Generate version
     runs-on: ubuntu-latest
