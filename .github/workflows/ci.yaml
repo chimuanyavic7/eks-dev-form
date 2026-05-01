@@ -11,6 +11,10 @@ on:
 env:
   IMAGE_NAME: ${{ secrets.DOCKERHUB_USERNAME }}
 
+# 🔐 IMPORTANT: gives GitHub Actions permission to push back to repo
+permissions:
+  contents: write
+
 jobs:
 
 # ---------------- CI ----------------
@@ -20,7 +24,6 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
-
 
 # ---------------- VERSION ----------------
   version:
@@ -35,7 +38,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 0   # important: needed to access tags
+          fetch-depth: 0
 
       - name: Get latest version tag
         id: last_version
@@ -115,26 +118,20 @@ jobs:
         with:
           context: frontend
           push: true
-          tags: |
-            ${{ env.IMAGE_NAME }}/frontend-dev:${{ env.VERSION }}
+          tags: ${{ env.IMAGE_NAME }}/frontend-dev:${{ env.VERSION }}
 
       - name: Build & Push Backend
         uses: docker/build-push-action@v5
         with:
           context: backend
           push: true
-          tags: |
-            ${{ env.IMAGE_NAME }}/backend-dev:${{ env.VERSION }}
-
+          tags: ${{ env.IMAGE_NAME }}/backend-dev:${{ env.VERSION }}
 
 # ---------------- HELM VALIDATION ----------------
   validate:
     name: Validate Helm Chart
     runs-on: ubuntu-latest
     needs: [docker, version]
-
-    permissions:
-      contents: write 
 
     steps:
       - uses: actions/checkout@v4
@@ -149,20 +146,14 @@ jobs:
             --set frontend.tag=${{ needs.version.outputs.version }} \
             --set backend.tag=${{ needs.version.outputs.version }}
 
-
 # ---------------- GITOPS ----------------
   gitops:
-    name: Update ArgoCD Repo
+    name: Update ArgoCD Repo (In-Repo GitOps)
     runs-on: ubuntu-latest
     needs: [validate, version]
 
     steps:
-      - name: Checkout GitOps repo
-        uses: actions/checkout@v4
-        with:
-          repository: chimuanyavic7/eks-dev-form
-          token: ${{ secrets.GITOPS_TOKEN }}
-          ref: main
+      - uses: actions/checkout@v4
 
       - name: Setup yq
         uses: mikefarah/yq@v4.44.3
@@ -175,14 +166,17 @@ jobs:
           yq eval -i ".frontend.tag = \"$VERSION\"" helm/todo-app/values.yaml
           yq eval -i ".backend.tag = \"$VERSION\"" helm/todo-app/values.yaml
 
-      - name: Commit & Push
+      - name: Commit & Push changes
         run: |
           git config user.name "github-actions"
           git config user.email "github-actions@github.com"
 
           git add helm/todo-app/values.yaml
 
-          git diff --cached --quiet && echo "No changes to commit" && exit 0 sure
+          if git diff --cached --quiet; then
+            echo "No changes to commit"
+            exit 0
+          fi
 
           git commit -m "deploy: ${{ needs.version.outputs.version }}"
           git push origin main
