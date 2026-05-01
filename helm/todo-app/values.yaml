@@ -22,4 +22,4 @@ ingress_alb:
   host: myapp.local
 ingress1_nginx:
   host: myapp.local
-  #welcome   
+
