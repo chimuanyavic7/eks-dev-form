@@ -13,7 +13,7 @@
 
 ### **Step 2 Install AWS CLI and Configure:**
 
-- Install AWS CLI command
+- Install AWS CLI command 
 
 ```
 curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
@@ -201,7 +201,7 @@ kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/cont
   Open your browser and navigate to:
 
 ```
-http://your-app-domain.com
+http://your-domain.com
 ```
 
 ---
