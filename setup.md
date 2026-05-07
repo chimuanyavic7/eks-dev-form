@@ -1,6 +1,6 @@
 ## **Setup Instruction:**
 
-## **Prerequisites** ok
+## **Prerequisites** 
 - AWS Account
 
 
